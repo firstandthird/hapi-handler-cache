@@ -8,6 +8,10 @@
     "type": "git",
     "url": "https://github.com/firstandthird/hapi-output-cache.git"
   },
+  "keywords": [
+    "hapi",
+    "cache"
+  ],
   "devDependencies": {
     "boom": "^2.6.1",
     "hapi": "^8.1.0"
