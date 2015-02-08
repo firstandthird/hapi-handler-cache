@@ -1,0 +1,15 @@
+{
+  "name": "hapi-output-cache",
+  "description": "Hapi output cache handler",
+  "homepage": "https://github.com/firstandthird/hapi-output-cache",
+  "author": "First+Third",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/firstandthird/hapi-output-cache.git"
+  },
+  "devDependencies": {
+    "boom": "^2.6.1",
+    "hapi": "^8.1.0"
+  }
+}
