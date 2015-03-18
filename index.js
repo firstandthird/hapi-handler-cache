@@ -20,7 +20,7 @@ exports.register = function(server, options, next) {
       cache.get(key, function(err, cached) {
         if (cached) {
           server.log(['outputCache', 'hit'], key);
-          var response = reply(cached.item);
+          var response = reply(cached);
           response.header('X-Output-Cache', 'hit');
           return;
         }
