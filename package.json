@@ -3,7 +3,7 @@
   "description": "Hapi output cache handler",
   "homepage": "https://github.com/firstandthird/hapi-output-cache",
   "author": "First+Third",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/firstandthird/hapi-output-cache.git"
