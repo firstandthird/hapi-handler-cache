@@ -48,7 +48,19 @@ server.route([
       outputCache: {
         ttl: 10*1000,
         fn: function(request, reply) {
-          reply(new Error('error object'));
+          reply(new Error('error object'), { test: 1 });
+        }
+      }
+    }
+  },
+  {
+    method: 'GET',
+    path: '/reply-null',
+    handler: {
+      outputCache: {
+        ttl: 10*1000,
+        fn: function(request, reply) {
+          reply(null, new Date().getTime());
         }
       }
     }
