@@ -40,6 +40,18 @@ server.route([
         }
       }
     }
+  },
+  {
+    method: 'GET',
+    path: '/error-object',
+    handler: {
+      outputCache: {
+        ttl: 10*1000,
+        fn: function(request, reply) {
+          reply(new Error('error object'));
+        }
+      }
+    }
   }
 ]);
 

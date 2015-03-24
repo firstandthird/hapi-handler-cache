@@ -38,7 +38,7 @@ exports.register = function(server, options, next) {
         }
         server.log(['outputCache', 'miss'], key);
         options.fn(request, function(response) {
-          if (response.isBoom) {
+          if (response instanceof Error || response.isBoom) {
             server.log(['outputCache', 'error'], key);
             return reply(response);
           }
