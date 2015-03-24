@@ -5,6 +5,7 @@ exports.register = function(server, options, next) {
   });
 
   var defaults = {
+    enabled: (typeof options.enabled == 'boolean') ? options.enabled : true,
     ttl: options.ttl || 60*1000,
     key: options.key || function(request) {
       return request.url.href;
@@ -16,6 +17,15 @@ exports.register = function(server, options, next) {
     return function(request, reply) {
 
       var key = (options.key) ? options.key(request) : defaults.key(request);
+
+      if (!defaults.enabled) {
+        return options.fn(request, function(response) {
+          var res = reply(response);
+          if (res.header) {
+            res.header('X-Output-Cache', 'disabled');
+          }
+        });
+      }
 
       cache.get(key, function(err, cached) {
         if (cached) {
