@@ -31,7 +31,9 @@ exports.register = function(server, options, next) {
         if (cached) {
           server.log(['outputCache', 'hit'], key);
           var response = reply(cached);
-          response.header('X-Output-Cache', 'hit');
+          if (response.header) {
+            response.header('X-Output-Cache', 'hit');
+          }
           return;
         }
         server.log(['outputCache', 'miss'], key);
@@ -48,7 +50,9 @@ exports.register = function(server, options, next) {
               server.log(['outputCache', 'set'], key);
             }
             var res = reply(response);
-            res.header('X-Output-Cache', 'miss');
+            if (res.header) {
+              res.header('X-Output-Cache', 'miss');
+            }
           });
         });
       });
