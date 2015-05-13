@@ -18,7 +18,7 @@ exports.register = function(server, options, next) {
 
       var key = (options.key) ? options.key(request) : defaults.key(request);
 
-      if (!defaults.enabled) {
+      if (!defaults.enabled || request.query.nocache == 1) {
         return options.fn(request, function(response) {
           var res = reply(response);
           if (res.header) {
