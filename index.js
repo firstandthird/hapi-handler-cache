@@ -28,11 +28,12 @@ exports.register = function(server, options, next) {
       }
 
       cache.get(key, function(err, cached) {
-        if (cached && request.query.nocache != 1) {
+        if (cached && cached.value && request.query.nocache != 1) {
           server.log(['outputCache', 'hit'], key);
-          var response = reply(cached);
+          var response = reply(cached.value);
           if (response.header) {
             response.header('X-Output-Cache', 'hit');
+            response.header('X-Output-Cache-Updated', cached.updated);
           }
           return;
         }
@@ -46,7 +47,11 @@ exports.register = function(server, options, next) {
             return reply(response);
           }
           var ttl = options.ttl || defaults.ttl;
-          cache.set(key, response, ttl, function(err) {
+          var cacheObj = {
+            value: response,
+            updated: new Date().getTime()
+          };
+          cache.set(key, cacheObj, ttl, function(err) {
             if (err) {
               server.log(['outputCache', 'cacheError'], err);
             } else {
@@ -55,6 +60,7 @@ exports.register = function(server, options, next) {
             var res = reply(response);
             if (res.header) {
               res.header('X-Output-Cache', 'miss');
+              res.header('X-Output-Cache-Updated', cacheObj.updated);
             }
           });
         });
