@@ -8,7 +8,7 @@ exports.register = function(server, options, next) {
     enabled: (typeof options.enabled == 'boolean') ? options.enabled : true,
     ttl: options.ttl || 60*1000,
     key: options.key || function(request) {
-      return request.url.href;
+      return request.url.href.replace(/.nocache=1/, '');
     }
   };
 
@@ -18,7 +18,7 @@ exports.register = function(server, options, next) {
 
       var key = (options.key) ? options.key(request) : defaults.key(request);
 
-      if (!defaults.enabled || request.query.nocache == 1) {
+      if (!defaults.enabled) {
         return options.fn(request, function(response) {
           var res = reply(response);
           if (res.header) {
@@ -28,7 +28,7 @@ exports.register = function(server, options, next) {
       }
 
       cache.get(key, function(err, cached) {
-        if (cached) {
+        if (cached && request.query.nocache != 1) {
           server.log(['outputCache', 'hit'], key);
           var response = reply(cached);
           if (response.header) {
