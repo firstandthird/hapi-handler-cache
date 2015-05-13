@@ -1,4 +1,11 @@
 
+0.3.0 / 2015-05-13
+==================
+
+  * pass last updated date back in a header
+  * nocache=1 will now populate cache for future requests.  nocache is removed from cache key
+
+
 0.2.0 / 2015-05-12
 ==================
 
