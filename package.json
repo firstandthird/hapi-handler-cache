@@ -13,7 +13,7 @@
     "cache"
   ],
   "devDependencies": {
-    "boom": "^2.6.1",
-    "hapi": "^8.1.0"
+    "boom": "^4.2.0",
+    "hapi": "^16.0.2"
   }
 }
