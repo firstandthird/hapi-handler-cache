@@ -19,7 +19,7 @@ lab.experiment('hapi-output-cache', () => {
       if (err) {
         throw err;
       }
-      server.start(done)
+      server.start(done);
     });
   });
   lab.afterEach((done) => {
@@ -29,29 +29,36 @@ lab.experiment('hapi-output-cache', () => {
   lab.test('can decorate a route', { timeout: 5000 }, (done) => {
     server.route({
       method: 'GET',
-      path: '/',
-      handler: {
-        outputCache: {
-          ttl: 100000,
-          fn: (request, reply) => {
-            setTimeout(() => {
-              reply('money');
-            }, 100);
+      path: '/route',
+      config: {
+        plugins: {
+          'hapi-output-cache': {
+            ttl: 1,
           }
         }
+      },
+      handler: (request, reply) => {
+        setTimeout(() => {
+          reply('money');
+        }, 100);
       }
     });
     const firstCallStart = new Date().getTime();
     server.inject({
       method: 'GET',
-      url: '/'
+      url: '/route'
     }, (res) => {
+      code.expect(res.headers['x-output-cache']).to.equal('miss');
+      code.expect(typeof res.headers['x-output-cache-updated']).to.equal('number');
       const firstCallEnd = new Date().getTime();
       const secondCallStart = new Date().getTime();
       server.inject({
         method: 'GET',
-        url: '/'
+        url: '/route'
       }, (res2) => {
+        console.log(res.headers)
+        code.expect(res.headers['x-output-cache']).to.equal('hit');
+        code.expect(typeof res.headers['x-output-cache-updated']).to.equal('number');
         const secondCallEnd = new Date().getTime();
         const firstCallTook = firstCallEnd - firstCallStart;
         const secondCallTook = secondCallEnd - secondCallStart;
@@ -64,29 +71,31 @@ lab.experiment('hapi-output-cache', () => {
   lab.test('can set a ttl setting', { timeout: 5000 }, (done) => {
     server.route({
       method: 'GET',
-      path: '/',
-      handler: {
-        outputCache: {
-          ttl: 1,
-          fn: (request, reply) => {
-            setTimeout(() => {
-              reply('money');
-            }, 100);
+      path: '/route',
+      config: {
+        plugins: {
+          'hapi-output-cache': {
+            ttl: 1,
           }
         }
+      },
+      handler: (request, reply) => {
+        setTimeout(() => {
+          reply('money');
+        }, 100);
       }
     });
     const firstCallStart = new Date().getTime();
     server.inject({
       method: 'GET',
-      url: '/'
+      url: '/route'
     }, (res) => {
       const firstCallEnd = new Date().getTime();
       const secondCallStart = new Date().getTime();
       setTimeout(() => {
         server.inject({
           method: 'GET',
-          url: '/'
+          url: '/route'
         }, (res2) => {
           const secondCallEnd = new Date().getTime();
           const firstCallTook = firstCallEnd - firstCallStart;
@@ -100,29 +109,31 @@ lab.experiment('hapi-output-cache', () => {
   lab.test('can set a key', { timeout: 5000 }, (done) => {
     server.route({
       method: 'GET',
-      path: '/',
-      handler: {
-        outputCache: {
-          key: () => 'master',
-          fn: (request, reply) => {
-            setTimeout(() => {
-              reply('money');
-            }, 100);
+      path: '/route',
+      config: {
+        plugins: {
+          'hapi-output-cache': {
+            key: () => 'master'
           }
         }
+      },
+      handler: (request, reply) => {
+        setTimeout(() => {
+          reply('money');
+        }, 100);
       }
     });
     const firstCallStart = new Date().getTime();
     server.inject({
       method: 'GET',
-      url: '/'
+      url: '/route'
     }, (res) => {
       const firstCallEnd = new Date().getTime();
       const secondCallStart = new Date().getTime();
       setTimeout(() => {
         server.inject({
           method: 'GET',
-          url: '/'
+          url: '/route'
         }, (res2) => {
           const secondCallEnd = new Date().getTime();
           const firstCallTook = firstCallEnd - firstCallStart;

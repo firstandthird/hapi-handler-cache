@@ -1,66 +1,61 @@
-exports.register = (server, options, next) => {
+const defaults = require('lodash.defaults');
+exports.register = (server, passedOptions, next) => {
   const cache = server.cache({
     segment: 'outputCache',
   });
 
-  const defaults = {
-    enabled: (typeof options.enabled === 'boolean') ? options.enabled : true,
-    ttl: options.ttl || 60 * 1000,
-    key: options.key || function(request) {
-      return request.url.href.replace(/.nocache=1/, '');
-    }
+  const defaultOptions = {
+    enabled: true,
+    ttl: 60 * 1000,
+    key: (request) => request.url.href.replace(/.nocache=1/, '')
   };
+  const options = defaults(defaultOptions, passedOptions);
 
-  server.handler('outputCache', (route, handlerOptions) => (request, reply) => {
-    const key = (handlerOptions.key) ? handlerOptions.key(request) : defaults.key(request);
-
-    if (!defaults.enabled) {
-      return handlerOptions.fn(request, (response) => {
+  server.ext('onPreHandler', (request, reply) => {
+    if (request.route.settings.plugins['hapi-output-cache'] && options.enabled) {
+      const key = options.key(request);
+      cache.get(key, (getErr, cached) => {
+        if (cached && cached.value && request.query.nocache !== 1) {
+          server.log(['outputCache', 'hit'], key);
+          // stub the handler so our response is not overwitten:
+          console.log(request.route)
+          // const response = reply(cached.value);
+          // response.header('X-Output-Cache', 'hit')
+          // response.header('X-Output-Cache-Updated', cache.updated);
+          request.response.headers['X-Output-Cache'] = 'hit';
+          return reply(cached.value);
+        }
+        server.log(['outputCache', 'miss'], key);
+        reply.continue();
+      });
+    } else {
+      return request.route.settings.handler(request, (response) => {
         const res = reply(response);
         if (res.header) {
           res.header('X-Output-Cache', 'disabled');
         }
       });
     }
-
-    cache.get(key, (getErr, cached) => {
-      if (cached && cached.value && request.query.nocache !== 1) {
-        server.log(['outputCache', 'hit'], key);
-        const response = reply(cached.value);
-        if (response.header) {
-          response.header('X-Output-Cache', 'hit');
-          response.header('X-Output-Cache-Updated', cached.updated);
+  });
+  server.ext('onPostHandler', (request, reply) => {
+    console.log(request.response.headers);
+    console.log(reply.headers)
+    if (request.route.settings.plugins['hapi-output-cache'] && options.enabled && request.response.headers['x-output-cache'] !== 'hit') {
+      const cacheObj = {
+        value: request.response.source,
+        updated: new Date().getTime()
+      };
+      cache.set(options.key(request), cacheObj, options.ttl, (setErr) => {
+        if (setErr) {
+          server.log(['outputCache', 'cacheError'], setErr);
+        } else {
+          server.log(['outputCache', 'set'], options.key);
         }
-        return;
-      }
-      server.log(['outputCache', 'miss'], key);
-      handlerOptions.fn(request, (err, response) => {
-        if (err) {
-          response = err;
-        }
-        if (response instanceof Error || response.isBoom) {
-          server.log(['outputCache', 'error'], key);
-          return reply(response);
-        }
-        const ttl = options.ttl || defaults.ttl;
-        const cacheObj = {
-          value: response,
-          updated: new Date().getTime()
-        };
-        cache.set(key, cacheObj, ttl, (setErr) => {
-          if (setErr) {
-            server.log(['outputCache', 'cacheError'], setErr);
-          } else {
-            server.log(['outputCache', 'set'], key);
-          }
-          const res = reply(response);
-          if (res.header) {
-            res.header('X-Output-Cache', 'miss');
-            res.header('X-Output-Cache-Updated', cacheObj.updated);
-          }
-        });
+        request.response.headers['X-Output-Cache'] = 'miss';
+        request.response.headers['X-Output-Cache-Updated'] = cacheObj.updated;
+        reply.continue();
       });
-    });
+    }
   });
   next();
 };
