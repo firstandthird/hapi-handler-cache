@@ -23,5 +23,8 @@
     "eslint-plugin-import": "^2.1.0",
     "hapi": "^16.0.2",
     "lab": "^11.2.2"
+  },
+  "dependencies": {
+    "lodash.defaults": "^4.2.0"
   }
 }

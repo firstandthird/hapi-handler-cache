@@ -1,3 +1,4 @@
+'use strict';
 const defaults = require('lodash.defaults');
 exports.register = (server, passedOptions, next) => {
   const cache = server.cache({
@@ -14,17 +15,20 @@ exports.register = (server, passedOptions, next) => {
   server.ext('onPreHandler', (request, reply) => {
     if (request.route.settings.plugins['hapi-output-cache'] && options.enabled) {
       const key = options.key(request);
+      if (!request.plugins) {
+        request.plugins = {};
+      }
+      request.plugins.outputCache = {};
       cache.get(key, (getErr, cached) => {
         if (cached && cached.value && request.query.nocache !== 1) {
           server.log(['outputCache', 'hit'], key);
-          // stub the handler so our response is not overwitten:
-          console.log(request.route)
-          // const response = reply(cached.value);
-          // response.header('X-Output-Cache', 'hit')
-          // response.header('X-Output-Cache-Updated', cache.updated);
-          request.response.headers['X-Output-Cache'] = 'hit';
+          // set the cached values in the plugin field:
+          request.plugins.outputCache['X-Output-Cache'] = 'hit';
+          request.plugins.outputCache['X-Output-Cache-Updated'] = cached.updated;
+          // go ahead and return the cached reply instead of continuing:
           return reply(cached.value);
         }
+        request.plugins.outputCache['X-Output-Cache'] = 'miss';
         server.log(['outputCache', 'miss'], key);
         reply.continue();
       });
@@ -37,25 +41,31 @@ exports.register = (server, passedOptions, next) => {
       });
     }
   });
-  server.ext('onPostHandler', (request, reply) => {
-    console.log(request.response.headers);
-    console.log(reply.headers)
-    if (request.route.settings.plugins['hapi-output-cache'] && options.enabled && request.response.headers['x-output-cache'] !== 'hit') {
-      const cacheObj = {
-        value: request.response.source,
-        updated: new Date().getTime()
-      };
-      cache.set(options.key(request), cacheObj, options.ttl, (setErr) => {
-        if (setErr) {
-          server.log(['outputCache', 'cacheError'], setErr);
-        } else {
-          server.log(['outputCache', 'set'], options.key);
-        }
-        request.response.headers['X-Output-Cache'] = 'miss';
-        request.response.headers['X-Output-Cache-Updated'] = cacheObj.updated;
-        reply.continue();
-      });
+  server.ext('onPreResponse', (request, reply) => {
+    if (!request.route.settings.plugins['hapi-output-cache'] || !options.enabled || !request.plugins.outputCache) {
+      return reply.continue();
     }
+    // if a cached value was found notify the browser:
+    if (request.plugins.outputCache['X-Output-Cache'] === 'hit') {
+      request.response.headers['X-Output-Cache'] = 'hit';
+      request.response.headers['X-Output-Cache-Updated'] = request.plugins.outputCache['X-Output-Cache-Updated'];
+      return reply.continue();
+    }
+    // otherwise set the output as the new cached value:
+    const cacheObj = {
+      value: request.response.source,
+      updated: new Date().getTime()
+    };
+    cache.set(options.key(request), cacheObj, options.ttl, (setErr) => {
+      if (setErr) {
+        server.log(['outputCache', 'cacheError'], setErr);
+      } else {
+        server.log(['outputCache', 'set'], options.key);
+      }
+      request.response.headers['X-Output-Cache'] = 'miss';
+      request.response.headers['X-Output-Cache-Updated'] = cacheObj.updated;
+      reply.continue();
+    });
   });
   next();
 };

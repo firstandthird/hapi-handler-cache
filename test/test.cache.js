@@ -56,9 +56,8 @@ lab.experiment('hapi-output-cache', () => {
         method: 'GET',
         url: '/route'
       }, (res2) => {
-        console.log(res.headers)
-        code.expect(res.headers['x-output-cache']).to.equal('hit');
-        code.expect(typeof res.headers['x-output-cache-updated']).to.equal('number');
+        code.expect(res2.headers['x-output-cache']).to.equal('hit');
+        code.expect(typeof res2.headers['x-output-cache-updated']).to.equal('number');
         const secondCallEnd = new Date().getTime();
         const firstCallTook = firstCallEnd - firstCallStart;
         const secondCallTook = secondCallEnd - secondCallStart;
