@@ -1,73 +1,80 @@
-var Hapi = require('hapi');
-var Boom = require('boom');
+const Hapi = require('hapi');
+const Boom = require('boom');
 
-var server = new Hapi.Server({
+const server = new Hapi.Server({
   debug: {
     log: ['outputCache']
   }
 });
-server.connection({ port: 3000 });
+server.connection({ port: 8080 });
 
-server.register({
-  register: require('../'),
-  options: {
-
+server.register([
+  { register: require('vision') },
+  {
+    register: require('../'),
+    options: {
+    }
   }
-}, function(err) {
+], (err) => {
+  if (err) {
+    throw err;
+  }
+  server.views({
+    path: `${__dirname}/views`,
+    engines: {
+      html: require('handlebars')
+    }
+  });
 });
 
 server.route([
   {
     method: 'GET',
     path: '/',
-    handler: {
-      outputCache: {
-        ttl: 10*1000,
-        fn: function(request, reply) {
-          reply(new Date().getTime());
+    config: {
+      plugins: {
+        'hapi-output-cache': {
+          ttl: 5 * 1000
         }
-      }
+      },
+    },
+    handler(request, reply) {
+      reply(new Date().getTime());
+    }
+  },
+  {
+    method: 'GET',
+    path: '/view',
+    config: {
+      plugins: {
+        'hapi-output-cache': {
+          ttl: 5 * 1000
+        }
+      },
+    },
+    handler(request, reply) {
+      reply.view('homepage', {
+        date: new Date().getTime()
+      });
     }
   },
   {
     method: 'GET',
     path: '/error',
-    handler: {
-      outputCache: {
-        ttl: 10*1000,
-        fn: function(request, reply) {
-          reply(Boom.badRequest('error'));
+    config: {
+      plugins: {
+        'hapi-output-cache': {
+          ttl: 5 * 1000
         }
       }
-    }
-  },
-  {
-    method: 'GET',
-    path: '/error-object',
-    handler: {
-      outputCache: {
-        ttl: 10*1000,
-        fn: function(request, reply) {
-          reply(new Error('error object'), { test: 1 });
-        }
-      }
-    }
-  },
-  {
-    method: 'GET',
-    path: '/reply-null',
-    handler: {
-      outputCache: {
-        ttl: 10*1000,
-        fn: function(request, reply) {
-          reply(null, new Date().getTime());
-        }
-      }
+    },
+    handler(request, reply) {
+      reply(Boom.badRequest('error'));
     }
   }
 ]);
 
-server.start(function () {
+server.start(() => {
   console.log('Server running at:', server.info.uri);
 });
 

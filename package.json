@@ -9,6 +9,7 @@
     "url": "https://github.com/firstandthird/hapi-output-cache.git"
   },
   "scripts": {
+    "example": "nodemon example/index.js",
     "test": "lab test"
   },
   "keywords": [
@@ -21,8 +22,10 @@
     "eslint": "^3.9.1",
     "eslint-config-firstandthird": "^3.2.0",
     "eslint-plugin-import": "^2.1.0",
-    "hapi": "^16.0.2",
-    "lab": "^11.2.2"
+    "handlebars": "^4.0.10",
+    "hapi": "^16.6.2",
+    "lab": "^11.2.2",
+    "vision": "^4.1.1"
   },
   "dependencies": {
     "lodash.defaults": "^4.2.0"
