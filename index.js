@@ -40,7 +40,8 @@ exports.register = (server, passedOptions, next) => {
 
   server.ext('onPreResponse', (request, reply) => {
     const response = request.response;
-    if (!request.route.settings.plugins['hapi-output-cache']) {
+    if (!request.route.settings.plugins['hapi-output-cache'] ||
+        request.query.nocache === '1') {
       response.header('X-Output-Cache', 'disabled');
       return reply.continue();
     }
