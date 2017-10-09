@@ -22,7 +22,6 @@ exports.register = (server, passedOptions, next) => {
 
     cache.get(key, (getErr, cached) => {
       if (cached && (cached.value || cached.template)) {
-        server.log(['outputCache', 'hit'], key);
         request.outputCache = true;
         // go ahead and return the cached reply instead of continuing:
         let response;
