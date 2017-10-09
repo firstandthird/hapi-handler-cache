@@ -44,6 +44,20 @@ server.route([
   },
   {
     method: 'GET',
+    path: '/long',
+    config: {
+      plugins: {
+        'hapi-output-cache': {
+          ttl: 60 * 1000
+        }
+      },
+    },
+    handler(request, reply) {
+      reply(new Date().getTime());
+    }
+  },
+  {
+    method: 'GET',
     path: '/view',
     config: {
       plugins: {
