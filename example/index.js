@@ -13,7 +13,7 @@ server.register([
   {
     register: require('../'),
     options: {
-      ttl: 5 * 1000
+      ttl: 10 * 1000
     }
   }
 ], (err) => {

@@ -21,15 +21,10 @@ exports.register = (server, passedOptions, next) => {
     const key = options.key(request);
 
     cache.get(key, (getErr, cached) => {
-      if (cached && (cached.value || cached.template)) {
+      if (cached && cached.value) {
         request.outputCache = true;
         // go ahead and return the cached reply instead of continuing:
-        let response;
-        if (cached.template) {
-          response = reply.view(cached.template, cached.context, cached.options);
-        } else {
-          response = reply(cached.value);
-        }
+        const response = reply(cached.value);
         response.header('X-Output-Cache', 'hit');
         response.header('X-Output-Cache-Updated', cached.updated);
         response.header('X-Output-Cache-Expires', cached.expires);
@@ -38,6 +33,27 @@ exports.register = (server, passedOptions, next) => {
       reply.continue();
     });
   });
+
+  const getCacheObj = function(request, response, ttl, done) {
+    const now = new Date().getTime();
+    const cacheObj = {
+      updated: new Date(),
+      expires: new Date(now + ttl)
+    };
+    if (response.variety === 'view') {
+      //render so we can store the output html in cache
+      request.render(response.source.template, response.source.context, response.source.options, (err, rendered, config) => {
+        if (err) {
+          return done(err);
+        }
+        cacheObj.value = rendered;
+        done(null, cacheObj);
+      });
+      return;
+    }
+    cacheObj.value = response.source;
+    done(null, cacheObj);
+  };
 
   server.ext('onPreResponse', (request, reply) => {
     const response = request.response;
@@ -53,25 +69,18 @@ exports.register = (server, passedOptions, next) => {
       return reply.continue();
     }
     const ttl = request.route.settings.plugins['hapi-output-cache'].ttl || options.ttl;
-    const now = new Date().getTime();
-    const cacheObj = {
-      updated: new Date(),
-      expires: new Date(now + ttl)
-    };
-    if (response.variety === 'view') {
-      cacheObj.template = response.source.template;
-      cacheObj.context = response.source.context;
-      cacheObj.options = response.source.options;
-    } else {
-      cacheObj.value = response.source;
-    }
     const key = options.key(request);
-    cache.set(key, cacheObj, ttl, (setErr) => {
-      if (setErr) {
-        server.log(['outputCache', 'cacheError'], setErr);
-      } else {
-        server.log(['outputCache', 'set'], key);
+    getCacheObj(request, response, ttl, (err, cacheObj) => {
+      if (err) {
+        return server.log(['outputCache', 'renderError'], err);
       }
+      cache.set(key, cacheObj, ttl, (setErr) => {
+        if (setErr) {
+          server.log(['outputCache', 'cacheError'], setErr);
+        } else {
+          server.log(['outputCache', 'set'], key);
+        }
+      });
     });
     request.response.header('X-Output-Cache', 'miss');
     reply.continue();
