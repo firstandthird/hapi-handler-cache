@@ -33,6 +33,7 @@ exports.register = (server, passedOptions, next) => {
         }
         response.header('X-Output-Cache', 'hit');
         response.header('X-Output-Cache-Updated', cached.updated);
+        response.header('X-Output-Cache-Expires', cached.expires);
         return;
       }
       reply.continue();
@@ -52,8 +53,11 @@ exports.register = (server, passedOptions, next) => {
     if (response && response.output && response.output.statusCode !== 200) {
       return reply.continue();
     }
+    const ttl = request.route.settings.plugins['hapi-output-cache'].ttl || options.ttl;
+    const now = new Date().getTime();
     const cacheObj = {
-      updated: new Date().getTime()
+      updated: new Date(),
+      expires: new Date(now + ttl)
     };
     if (response.variety === 'view') {
       cacheObj.template = response.source.template;
@@ -63,7 +67,6 @@ exports.register = (server, passedOptions, next) => {
       cacheObj.value = response.source;
     }
     const key = options.key(request);
-    const ttl = request.route.settings.plugins['hapi-output-cache'].ttl || options.ttl;
     cache.set(key, cacheObj, ttl, (setErr) => {
       if (setErr) {
         server.log(['outputCache', 'cacheError'], setErr);
