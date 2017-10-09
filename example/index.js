@@ -13,6 +13,7 @@ server.register([
   {
     register: require('../'),
     options: {
+      ttl: 5 * 1000
     }
   }
 ], (err) => {
@@ -34,7 +35,6 @@ server.route([
     config: {
       plugins: {
         'hapi-output-cache': {
-          ttl: 5 * 1000
         }
       },
     },

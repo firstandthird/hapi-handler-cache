@@ -28,6 +28,6 @@
     "vision": "^4.1.1"
   },
   "dependencies": {
-    "lodash.defaults": "^4.2.0"
+    "aug": "^2.0.0"
   }
 }

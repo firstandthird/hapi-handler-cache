@@ -1,5 +1,4 @@
-'use strict';
-const defaults = require('lodash.defaults');
+const aug = require('aug');
 exports.register = (server, passedOptions, next) => {
   const cache = server.cache({
     segment: 'outputCache',
@@ -9,7 +8,7 @@ exports.register = (server, passedOptions, next) => {
     ttl: 60 * 1000,
     key: (request) => request.url.href.replace(/.nocache=1/, '').replace(/.refreshcache=1/, '')
   };
-  const options = defaults(defaultOptions, passedOptions);
+  const options = aug(defaultOptions, passedOptions);
 
   server.ext('onPreHandler', (request, reply) => {
     if (!request.route.settings.plugins['hapi-output-cache'] ||
