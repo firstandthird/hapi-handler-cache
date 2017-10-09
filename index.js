@@ -7,14 +7,15 @@ exports.register = (server, passedOptions, next) => {
 
   const defaultOptions = {
     ttl: 60 * 1000,
-    key: (request) => request.url.href.replace(/.nocache=1/, '')
+    key: (request) => request.url.href.replace(/.nocache=1/, '').replace(/.refreshcache=1/, '')
   };
   const options = defaults(defaultOptions, passedOptions);
 
   server.ext('onPreHandler', (request, reply) => {
     if (!request.route.settings.plugins['hapi-output-cache'] ||
         request.auth.isAuthenticated ||
-        request.query.nocache === '1'
+        request.query.nocache === '1' ||
+        request.query.refreshcache === '1'
         ) {
       return reply.continue();
     }
