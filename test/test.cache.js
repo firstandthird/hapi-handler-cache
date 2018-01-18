@@ -116,37 +116,38 @@ lab.experiment('hapi-output-cache', () => {
     code.expect(res3.result).to.equal(2);
   });
 
-  // lab.test('will not cache a non-200 return value', { timeout: 5000 }, async() => {
-  //   let count = 0;
-  //   server.route({
-  //     method: 'GET',
-  //     path: '/route',
-  //     config: {
-  //       plugins: {
-  //         'hapi-output-cache': {
-  //           ttl: 100000,
-  //         }
-  //       }
-  //     },
-  //     handler(request, h) {
-  //       if (count === 0) {
-  //         count++;
-  //         throw new Error('misaligned widgets');
-  //       }
-  //       return count;
-  //     }
-  //   });
-  //   const res = await server.inject({
-  //     method: 'GET',
-  //     url: '/route'
-  //   });
-  //   code.expect(res.statusCode).to.equal(500);
-  //   // const res2 = await server.inject({
-  //   //   method: 'GET',
-  //   //   url: '/route'
-  //   // });
-  //   // code.expect(res2.result).to.equal(1);
-  // });
+  lab.test('will not cache a non-200 return value', { timeout: 5000 }, async() => {
+    let count = 0;
+    server.route({
+      method: 'GET',
+      path: '/route',
+      config: {
+        plugins: {
+          'hapi-output-cache': {
+            ttl: 100000,
+          }
+        }
+      },
+      handler(request, h) {
+        if (count === 0) {
+          count++;
+          throw new Error('misaligned widgets');
+        }
+        return count;
+      }
+    });
+    const res = await server.inject({
+      method: 'GET',
+      url: '/route'
+    });
+    code.expect(res.statusCode).to.equal(500);
+    const res2 = await server.inject({
+      method: 'GET',
+      url: '/route'
+    });
+    code.expect(res2.statusCode).to.equal(200);
+    code.expect(res2.result).to.equal(1);
+  });
 
   lab.test('can set a ttl setting', { timeout: 5000 }, async() => {
     server.route({
