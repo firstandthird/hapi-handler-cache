@@ -7,7 +7,7 @@ const outputCachePlugin = require('../');
 
 let server;
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-/*
+
 lab.experiment('hapi-output-cache', () => {
   lab.beforeEach(async() => {
     server = new Hapi.Server({
@@ -129,40 +129,33 @@ lab.experiment('hapi-output-cache', () => {
     code.expect(firstCallTook - secondCallTook).to.be.lessThan(10);
   });
 });
-*/
 
-lab.experiment('hapi-output-cache with view rendering', () => {
-  lab.test('can decorate a route', { timeout: 5000 }, async() => {
-    const server2 = new Hapi.Server({
+lab.experiment('hapi-output-cache with views', () => {
+  lab.beforeEach(async() => {
+    server = new Hapi.Server({
       debug: {
-        log: ['outputCache']
+        log: ['error', 'hapi-method-loader']
       },
-      port: 8080
+      port: 3000
     });
-    await server2.register([
-      { plugin: require('vision') },
-      {
-        plugin: require('../'),
-        options: {
-          ttl: 10 * 1000
-        }
-      }
-    ]);
-    server2.views({
-      path: `${__dirname}/views`,
-      engines: {
-        html: require('handlebars')
-      }
-    });
-    server2.route({
+    await server.register(outputCachePlugin, {});
+    await server.register(require('vision'), {});
+    await server.start();
+  });
+  lab.afterEach(async() => {
+    await server.stop();
+  });
+
+  lab.test('can decorate a route', { timeout: 5000 }, async() => {
+    server.route({
       method: 'GET',
-      path: '/view',
+      path: '/route',
       config: {
         plugins: {
           'hapi-output-cache': {
-            ttl: 5 * 1000
+            ttl: 1000,
           }
-        },
+        }
       },
       handler(request, h) {
         return h.view('homepage', {
@@ -170,16 +163,22 @@ lab.experiment('hapi-output-cache with view rendering', () => {
         });
       }
     });
-    const response1 = await server2.inject({
-      method: 'get',
-      url: '/view'
+    server.views({
+      path: `${__dirname}/views`,
+      engines: {
+        html: require('handlebars')
+      }
     });
-    const response2 = await server2.inject({
-      method: 'get',
-      url: '/view'
+    const res = await server.inject({
+      method: 'GET',
+      url: '/route'
     });
-    console.log(response1.result)
-    console.log(response2.result)
-    code.expect(response1.result).to.equal(response2.result);
+    const res2 = await server.inject({
+      method: 'get',
+      url: '/route'
+    });
+    code.expect(res.statusCode).to.equal(200);
+    code.expect(res2.statusCode).to.equal(200);
+    code.expect(res.result).to.equal(res2.result);
   });
 });
