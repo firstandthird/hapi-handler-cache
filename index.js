@@ -69,13 +69,15 @@ const register = (server, passedOptions) => {
       const cacheObj = await getCacheObj(request, response, ttl);
       await cache.set(key, cacheObj, ttl);
       server.log(['outputCache', 'set'], key);
-      // cache update header won't be automatically set as in previous version:
-      request.response.header('X-Output-Cache-Updated', cacheObj.updated.toString());
-      request.response.header('X-Output-Cache', 'miss');
+      // will need to generate a new response to return:
+      const newResponse = h.response(cacheObj.value);
+      newResponse.header('X-Output-Cache-Updated', cacheObj.updated.toString());
+      newResponse.header('X-Output-Cache', 'miss');
+      return newResponse;
     } catch (err) {
       server.log(['outputCache', 'error'], err);
+      return h.continue;
     }
-    return h.continue;
   });
 };
 
