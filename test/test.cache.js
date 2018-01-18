@@ -23,6 +23,27 @@ lab.experiment('hapi-output-cache', () => {
     await server.stop();
   });
 
+  lab.test('does not interfere with routes that are not decorated', { timeout: 5000 }, async() => {
+    let count = 0;
+    server.route({
+      method: 'GET',
+      path: '/route',
+      handler(request, h) {
+        return count++;
+      }
+    });
+    const res = await server.inject({
+      method: 'GET',
+      url: '/route'
+    });
+    const res2 = await server.inject({
+      method: 'GET',
+      url: '/route'
+    });
+    code.expect(res.result).to.equal(0);
+    code.expect(res2.result).to.equal(1);
+  });
+
   lab.test('can decorate a route', { timeout: 5000 }, async() => {
     server.route({
       method: 'GET',
@@ -60,6 +81,72 @@ lab.experiment('hapi-output-cache', () => {
     code.expect(firstCallTook).to.be.greaterThan(secondCallTook);
     code.expect(firstCallTook - secondCallTook).to.be.greaterThan(10);
   });
+
+  lab.test('will skip the cache if called with nocache query option', { timeout: 5000 }, async() => {
+    let count = 0;
+    server.route({
+      method: 'GET',
+      path: '/route',
+      config: {
+        plugins: {
+          'hapi-output-cache': {
+            ttl: 100000,
+          }
+        }
+      },
+      async handler(request, h) {
+        count++;
+        return count;
+      }
+    });
+    const res = await server.inject({
+      method: 'GET',
+      url: '/route'
+    });
+    const res2 = await server.inject({
+      method: 'GET',
+      url: '/route'
+    });
+    const res3 = await server.inject({
+      method: 'GET',
+      url: '/route?nocache=1'
+    });
+    code.expect(res.result).to.equal(1);
+    code.expect(res2.result).to.equal(1);
+    code.expect(res3.result).to.equal(2);
+  });
+
+  // lab.test('will not cache a non-200 return value', { timeout: 5000 }, async() => {
+  //   let count = 0;
+  //   server.route({
+  //     method: 'GET',
+  //     path: '/route',
+  //     config: {
+  //       plugins: {
+  //         'hapi-output-cache': {
+  //           ttl: 100000,
+  //         }
+  //       }
+  //     },
+  //     handler(request, h) {
+  //       if (count === 0) {
+  //         count++;
+  //         throw new Error('misaligned widgets');
+  //       }
+  //       return count;
+  //     }
+  //   });
+  //   const res = await server.inject({
+  //     method: 'GET',
+  //     url: '/route'
+  //   });
+  //   code.expect(res.statusCode).to.equal(500);
+  //   // const res2 = await server.inject({
+  //   //   method: 'GET',
+  //   //   url: '/route'
+  //   // });
+  //   // code.expect(res2.result).to.equal(1);
+  // });
 
   lab.test('can set a ttl setting', { timeout: 5000 }, async() => {
     server.route({
