@@ -146,7 +146,7 @@ lab.experiment('hapi-output-cache with views', () => {
     await server.stop();
   });
 
-  lab.test('can decorate a route', { timeout: 5000 }, async() => {
+  lab.test('can call a route with a view', { timeout: 5000 }, async() => {
     server.route({
       method: 'GET',
       path: '/route',
