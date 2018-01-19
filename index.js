@@ -10,7 +10,6 @@ const register = (server, passedOptions) => {
   };
   const options = Object.assign({}, defaultOptions, passedOptions);
   server.ext('onPreHandler', async(request, h) => {
-    console.log(request.auth.isAuthenticated)
     if (!request.route.settings.plugins['hapi-output-cache'] ||
         request.query.nocache === '1' ||
         request.query.refreshcache === '1'

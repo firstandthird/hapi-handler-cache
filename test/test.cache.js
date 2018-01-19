@@ -183,9 +183,8 @@ lab.experiment('hapi-output-cache with views', () => {
   });
 });
 
-
 lab.experiment('supports noAuthCache', (t) => {
-  lab.test('will allow caching if noAuthCache is off', async() => {
+  lab.test('disallow caching when noAuthCache is true', async() => {
     server = new Hapi.Server({
       debug: {
         log: ['error', 'hapi-method-loader']
@@ -223,20 +222,17 @@ lab.experiment('supports noAuthCache', (t) => {
     const res2 = await server.inject({
       method: 'get',
       url: '/route',
-      headers: {
-        authorization: new Buffer('hi:there', 'utf8').toString('base64')
-      },
       credentials: {
         isAuthenticated: true,
         name: 'nobody'
       }
     });
     code.expect(res.result).to.equal(1);
-    code.expect(res2.result).to.equal(1);
+    code.expect(res2.result).to.equal(2);
     await server.stop();
   });
 
-  lab.test('will allow caching if noAuthCache is off', async() => {
+  lab.test('allow caching if noAuthCache is false', async() => {
     server = new Hapi.Server({
       debug: {
         log: ['error', 'hapi-method-loader']
