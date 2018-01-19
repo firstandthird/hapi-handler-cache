@@ -4,17 +4,20 @@ const register = (server, passedOptions) => {
   });
 
   const defaultOptions = {
+    noAuthCache: true, // will not cache authenticated routes when true
     ttl: 60 * 1000,
     key: (request) => request.url.href.replace(/.nocache=1/, '').replace(/.refreshcache=1/, '')
   };
   const options = Object.assign({}, defaultOptions, passedOptions);
-
   server.ext('onPreHandler', async(request, h) => {
+    console.log(request.auth.isAuthenticated)
     if (!request.route.settings.plugins['hapi-output-cache'] ||
-        request.auth.isAuthenticated ||
         request.query.nocache === '1' ||
         request.query.refreshcache === '1'
-        ) {
+    ) {
+      return h.continue;
+    }
+    if (options.noAuthCache && request.auth.isAuthenticated) {
       return h.continue;
     }
     const key = options.key(request);
@@ -50,6 +53,9 @@ const register = (server, passedOptions) => {
   };
 
   server.ext('onPreResponse', async(request, h) => {
+    if (options.noAuthCache && request.auth.isAuthenticated) {
+      return h.continue;
+    }
     const response = request.response;
     if (!request.route.settings.plugins['hapi-output-cache'] ||
         request.query.nocache === '1') {

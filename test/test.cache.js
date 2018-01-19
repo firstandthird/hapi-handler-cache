@@ -1,5 +1,5 @@
 'use strict';
-const code = require('code');   // assertion library
+const code = require('code'); // assertion library
 const Lab = require('lab');
 const lab = exports.lab = Lab.script();
 const Hapi = require('hapi');
@@ -180,5 +180,110 @@ lab.experiment('hapi-output-cache with views', () => {
     code.expect(res.statusCode).to.equal(200);
     code.expect(res2.statusCode).to.equal(200);
     code.expect(res.result).to.equal(res2.result);
+  });
+});
+
+
+lab.experiment('supports noAuthCache', (t) => {
+  lab.test('will allow caching if noAuthCache is off', async() => {
+    server = new Hapi.Server({
+      debug: {
+        log: ['error', 'hapi-method-loader']
+      },
+      port: 3000
+    });
+    await server.register(outputCachePlugin, {});
+    await server.register(require('vision'), {});
+    await server.start();
+
+    let count = 0;
+    server.route({
+      method: 'GET',
+      path: '/route',
+      config: {
+        plugins: {
+          'hapi-output-cache': {
+            ttl: 1000,
+          }
+        }
+      },
+      handler(request, h) {
+        count++;
+        return count;
+      }
+    });
+    const res = await server.inject({
+      method: 'get',
+      url: '/route',
+      credentials: {
+        isAuthenticated: true,
+        name: 'nobody'
+      }
+    });
+    const res2 = await server.inject({
+      method: 'get',
+      url: '/route',
+      headers: {
+        authorization: new Buffer('hi:there', 'utf8').toString('base64')
+      },
+      credentials: {
+        isAuthenticated: true,
+        name: 'nobody'
+      }
+    });
+    code.expect(res.result).to.equal(1);
+    code.expect(res2.result).to.equal(1);
+    await server.stop();
+  });
+
+  lab.test('will allow caching if noAuthCache is off', async() => {
+    server = new Hapi.Server({
+      debug: {
+        log: ['error', 'hapi-method-loader']
+      },
+      port: 3000
+    });
+    await server.register({ plugin: outputCachePlugin, options: { noAuthCache: false } });
+    await server.register(require('vision'), {});
+    await server.start();
+
+    let count = 0;
+    server.route({
+      method: 'GET',
+      path: '/route',
+      config: {
+        plugins: {
+          'hapi-output-cache': {
+            ttl: 1000,
+          }
+        }
+      },
+      handler(request, h) {
+        count++;
+        return count;
+      }
+    });
+    const res = await server.inject({
+      method: 'get',
+      url: '/route',
+      credentials: {
+        isAuthenticated: true,
+        name: 'nobody'
+      }
+    });
+    const res2 = await server.inject({
+      method: 'get',
+      url: '/route',
+      headers: {
+        authorization: new Buffer('hi:there', 'utf8').toString('base64')
+      },
+      credentials: {
+        isAuthenticated: true,
+        name: 'nobody'
+      }
+    });
+    code.expect(res.result).to.equal(1);
+    code.expect(res2.result).to.equal(1);
+    await server.stop();
   });
 });
