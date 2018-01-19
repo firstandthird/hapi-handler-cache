@@ -10,6 +10,9 @@ const register = (server, passedOptions) => {
   const options = Object.assign({}, defaultOptions, passedOptions);
 
   server.ext('onPreHandler', async(request, h) => {
+    if (request.method.toLowerCase() !== 'get') {
+      return h.continue;
+    }
     if (!request.route.settings.plugins['hapi-output-cache'] ||
         request.auth.isAuthenticated ||
         request.query.nocache === '1' ||
@@ -50,6 +53,9 @@ const register = (server, passedOptions) => {
   };
 
   server.ext('onPreResponse', async(request, h) => {
+    if (request.method.toLowerCase() !== 'get') {
+      return h.continue;
+    }
     const response = request.response;
     if (!request.route.settings.plugins['hapi-output-cache'] ||
         request.query.nocache === '1') {

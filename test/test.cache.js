@@ -61,6 +61,45 @@ lab.experiment('hapi-output-cache', () => {
     code.expect(firstCallTook - secondCallTook).to.be.greaterThan(10);
   });
 
+  lab.test('will skip if not HTTP GET', { timeout: 5000 }, async() => {
+    let count = 0;
+    server.route({
+      method: '*',
+      path: '/route',
+      config: {
+        plugins: {
+          'hapi-output-cache': {
+            ttl: 1000,
+          }
+        }
+      },
+      handler(request, h) {
+        count++;
+        return count;
+      }
+    });
+    const res = await server.inject({
+      method: 'POST',
+      url: '/route'
+    });
+    const res2 = await server.inject({
+      method: 'POST',
+      url: '/route'
+    });
+    const res3 = await server.inject({
+      method: 'GET',
+      url: '/route'
+    });
+    const res4 = await server.inject({
+      method: 'GET',
+      url: '/route'
+    });
+    code.expect(res.result).to.equal(1);
+    code.expect(res2.result).to.equal(2);
+    code.expect(res3.result).to.equal(3);
+    code.expect(res4.result).to.equal(3);
+  });
+
   lab.test('can set a ttl setting', { timeout: 5000 }, async() => {
     server.route({
       method: 'GET',
